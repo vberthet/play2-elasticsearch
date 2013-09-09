@@ -5,7 +5,7 @@ import play.api.libs.json.{Json, Writes, Reads}
 import org.elasticsearch.search.facet.{FacetBuilder, Facets}
 import org.elasticsearch.action.delete.DeleteResponse
 import org.elasticsearch.action.index.IndexResponse
-import org.elasticsearch.index.query.{QueryBuilders, QueryBuilder}
+import org.elasticsearch.index.query.{FilterBuilder, QueryBuilders, QueryBuilder}
 import org.elasticsearch.search.sort.SortBuilder
 import org.elasticsearch.search.SearchHit
 import org.elasticsearch.action.search.{SearchRequestBuilder, SearchResponse, SearchType}
@@ -211,6 +211,7 @@ object ScalaHelpers {
    */
   case class IndexQuery[T <: Indexable](
     val builder: QueryBuilder = QueryBuilders.matchAllQuery(),
+    val filter: Option[FilterBuilder] = None,
     val facetBuilders: List[FacetBuilder] = Nil,
     val sortBuilders: List[SortBuilder] = Nil,
     val from: Option[Int] = None,
@@ -219,6 +220,7 @@ object ScalaHelpers {
     val noField: Boolean = false
   ) {
     def withBuilder(builder: QueryBuilder): IndexQuery[T] = copy(builder = builder)
+    def withFilter(filter: FilterBuilder):IndexQuery[T] = copy(filter = Some(filter))
     def addFacet(facet: FacetBuilder): IndexQuery[T] = copy(facetBuilders = facet :: facetBuilders)
     def addSort(sort: SortBuilder): IndexQuery[T] = copy(sortBuilders = sort :: sortBuilders)
     def withFrom(from: Int): IndexQuery[T] = copy(from = Some(from))
@@ -261,6 +263,7 @@ object ScalaHelpers {
         .setTypes(indexPath.`type`)
         .setSearchType(SearchType.QUERY_THEN_FETCH)
       request.setQuery(builder)
+      filter.map(f => request.setFilter(f))
       facetBuilders.foreach {
         request.addFacet(_)
       }
